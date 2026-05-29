@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飞书 Multi-Agent 协作系统</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    font-size: 14px;
+    padding: 40px 20px;
+  }
+  .container { max-width: 760px; margin: 0 auto; }
+
+  .hero {
+    text-align: center;
+    padding: 48px 20px 44px;
+  }
+  .hero h1 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #58a6ff, #bc8cff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--muted); font-size: 15px; }
+
+  .tagline {
+    background: rgba(63,185,80,0.08);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 16px 24px;
+    text-align: center;
+    margin: 24px 0;
+    font-size: 14px;
+    color: var(--green);
+  }
+
+  .roles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px 0 28px;
+  }
+  .role {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .role-name { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .role.pm .role-name { color: var(--accent); }
+  .role.plan .role-name { color: var(--purple); }
+  .role.dev .role-name { color: var(--green); }
+  .role.test .role-name { color: var(--yellow); }
+  .role-desc { font-size: 12px; color: var(--muted); }
+
+  h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 36px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 14px 0;
+  }
+  .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--accent); }
+
+  pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #ffa657;
+    margin: 8px 0;
+  }
+
+  .warn {
+    background: rgba(210,153,34,0.08);
+    border: 1px solid var(--yellow);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--yellow);
+    margin: 10px 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 8px 0;
+  }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td { padding: 8px 12px; border: 1px solid var(--border); }
+  td:first-child { color: var(--accent); font-family: monospace; }
+  code { color: #ffa657; }
+
+  .auto-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+  .auto-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    text-align: center;
+  }
+  .auto-step .arrow { color: var(--muted); font-size: 16px; margin: 0 4px; }
+
+  .footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <h1>飞书 Multi-Agent 协作系统</h1>
+  <p>把凭证发给我，我全自动配置、启动、验证链路</p>
+</div>
+
+<div class="tagline">
+  创建飞书应用 → 把 App ID 和 App Secret 发给我 → 我搞定所有配置 → 使用即可
+</div>
+
+<div class="roles">
+  <div class="role pm">
+    <div class="role-name">PM</div>
+    <div class="role-desc">项目总监<br>接收需求、派发链路</div>
+  </div>
+  <div class="role plan">
+    <div class="role-name">Plan</div>
+    <div class="role-desc">技术规划<br>架构设计、Code Review</div>
+  </div>
+  <div class="role dev">
+    <div class="role-name">Dev</div>
+    <div class="role-desc">开发工程师<br>开发实现、修复问题</div>
+  </div>
+  <div class="role test">
+    <div class="role-name">Test</div>
+    <div class="role-desc">测试验证<br>功能测试、验证汇报</div>
+  </div>
+</div>
+
+<h2>第一步：你做</h2>
+
+<div class="card">
+  <h3>创建飞书应用</h3>
+  <ol style="color:var(--muted);font-size:13px;margin-left:20px">
+    <li>访问 <a href="https://open.feishu.cn/app" target="_blank" style="color:var(--accent)">open.feishu.cn/app</a>，创建 N 个企业自建应用</li>
+    <li>每个应用 → 应用功能 → 机器人 → 开启</li>
+    <li>每个应用 → 版本管理与发布 → 创建版本 → 发布</li>
+    <li>收集每个应用的 App ID、App Secret</li>
+    <li>新建群聊，把所有机器人都拉进去，获取群 chat_id</li>
+  </ol>
+  <div class="warn">未发布版本会导致 @消息不响应，务必发布</div>
+</div>
+
+<h2>第二步：发给我</h2>
+
+<div class="card">
+  <p style="color:var(--muted);font-size:13px">把凭证汇总发给我，我来自动完成所有配置和启动：</p>
+  <pre>飞书群 chat_id：oc_xxx
+LLM Provider：minimax-cn
+LLM API Key：xxx
+LLM Model：xxx
+
+PM：App ID、App Secret
+Plan：App ID、App Secret（可选）
+Dev：App ID、App Secret
+Test：App ID、App Secret（可选）
+...（任意 2~5 个角色组合）</pre>
+  <p style="color:var(--muted);font-size:12px;margin-top:8px">open_id 由我调用飞书 API 自动获取，无需你提供。</p>
+</div>
+
+<h2>第三步：我自动完成</h2>
+
+<div class="card">
+  <pre>✅ 验证凭证，调用飞书 API 获取 open_id
+✅ 创建 profiles
+✅ 生成 config.yaml + .env
+✅ 渲染 SOUL.md（角色定义 + 链路规则）
+✅ 修复 feishu.py at_patterns
+✅ 修复 prompt_builder.py load_soul_md
+✅ 停止旧进程 + 清理 lock
+✅ 启动全部 agent
+✅ 验证连接，告知你结果</pre>
+</div>
+
+<h2>协作链路</h2>
+
+<div class="card">
+  <p style="color:var(--muted);font-size:13px;margin-bottom:14px">链路根据角色数量自动适配，灵活组合：</p>
+
+  <p style="font-size:13px;margin-bottom:8px"><strong>4 角色（完整链路）</strong></p>
+  <div class="auto-flow">
+    <div class="auto-step" style="color:var(--accent)">PM</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--purple)">Plan</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--green)">Dev</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--purple)">Plan review</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--accent)">PM</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--yellow)">Test</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--green)">Dev</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--yellow)">Test 再验</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--accent)">PM</div>
+  </div>
+
+  <p style="font-size:13px;margin:14px 0 8px"><strong>3 角色（PM + Dev + Test）</strong></p>
+  <div class="auto-flow">
+    <div class="auto-step" style="color:var(--accent)">PM</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--green)">Dev</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--yellow)">Test</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--accent)">PM</div>
+  </div>
+
+  <p style="font-size:13px;margin:14px 0 8px"><strong>2 角色（PM + Dev，最简）</strong></p>
+  <div class="auto-flow">
+    <div class="auto-step" style="color:var(--accent)">PM</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--green)">Dev</div>
+    <span class="auto-step arrow">→</span>
+    <div class="auto-step" style="color:var(--accent)">PM</div>
+  </div>
+</div>
+
+<h2>扩展更多角色</h2>
+
+<div class="card">
+  <p style="color:var(--muted);font-size:13px;margin-bottom:10px">只需在凭证里加上新角色即可，支持 2~5 个任意组合：</p>
+  <pre>ROLES=pm,plan,dev,qa,test  # 加 QA
+ROLES=pm,arch,dev,test       # 加架构师</pre>
+  <p style="color:var(--muted);font-size:12px;margin-top:8px">新角色只需提供 SOUL 模板文件（templates/SOUL_{role}.md），setup.sh 自动识别并渲染。</p>
+</div>
+
+<h2>前置要求</h2>
+
+<div class="card">
+  <ul style="color:var(--muted);font-size:13px;margin-left:20px">
+    <li>macOS</li>
+    <li>Hermes Agent 已安装（<code>~/.hermes/hermes-agent</code>）</li>
+    <li>每个飞书应用已开启机器人能力 + 发布版本</li>
+  </ul>
+</div>
+
+<div class="footer">
+  飞书 Multi-Agent 协作系统 · Hermes Agent
+</div>
+
+</div>
+</body>
+</html>
