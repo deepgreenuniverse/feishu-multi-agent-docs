@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飞书 Multi-Agent 协作系统 — 工作流程介绍</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --orange: #ffa657;
+    --pink: #ff7b72;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    font-size: 15px;
+    padding: 0;
+  }
+
+  /* ---- Hero ---- */
+  .hero {
+    background: linear-gradient(135deg, #0d1117 0%, #16213e 50%, #1a1037 100%);
+    padding: 80px 40px 100px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(88,166,255,0.12) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(88,166,255,0.12);
+    border: 1px solid rgba(88,166,255,0.3);
+    color: var(--accent);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fff 0%, #a8d8ff 50%, #bc8cff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ---- Nav ---- */
+  .nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .nav-item {
+    padding: 14px 20px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .nav-item:hover { color: var(--text); }
+  .nav-item.active { color: var(--accent); border-color: var(--accent); }
+
+  /* ---- Container ---- */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+
+  /* ---- Section ---- */
+  .section {
+    padding: 72px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .section:last-child { border-bottom: none; }
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .section-subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+
+  /* ---- Role cards ---- */
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .role-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .role-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .role-card.pm::before { background: var(--accent); }
+  .role-card.plan::before { background: var(--purple); }
+  .role-card.dev::before { background: var(--green); }
+  .role-card.test::before { background: var(--yellow); }
+  .role-card .icon { font-size: 32px; margin-bottom: 12px; }
+  .role-card .name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .role-card.pm .name { color: var(--accent); }
+  .role-card.plan .name { color: var(--purple); }
+  .role-card.dev .name { color: var(--green); }
+  .role-card.test .name { color: var(--yellow); }
+  .role-card .en { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .role-card .desc { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .role-card .duty { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+  /* ---- Flow diagram ---- */
+  .flow-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 40px;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .flow-row:last-child { margin-bottom: 0; }
+  .flow-node {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 18px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 90px;
+  }
+  .flow-node.pm { border-color: var(--accent); color: var(--accent); }
+  .flow-node.plan { border-color: var(--purple); color: var(--purple); }
+  .flow-node.dev { border-color: var(--green); color: var(--green); }
+  .flow-node.test { border-color: var(--yellow); color: var(--yellow); }
+  .flow-node.user { border-color: var(--orange); color: var(--orange); }
+  .flow-node .sub { font-size: 10px; font-weight: 400; opacity: 0.7; display: block; }
+  .flow-arrow { color: var(--muted); font-size: 20px; margin: 0 6px; flex-shrink: 0; }
+  .flow-arrow-down { color: var(--muted); font-size: 20px; margin: 4px 0; text-align: center; display: block; }
+  .flow-desc { text-align: center; color: var(--muted); font-size: 13px; margin-top: 20px; }
+
+  /* ---- Use cases ---- */
+  .usecase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .usecase {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .usecase .icon { font-size: 28px; margin-bottom: 12px; }
+  .usecase .title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .usecase .desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  /* ---- Advantages ---- */
+  .adv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .adv {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .adv .num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .adv .content .title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .adv .content .desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  /* ---- Mechanic ---- */
+  .mech-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .mech {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .mech-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+  .mech-content { flex: 1; }
+  .mech-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .mech-desc { font-size: 13px; color: var(--muted); line-height: 1.8; }
+  .mech-desc code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 12px;
+    color: #ffa657;
+  }
+
+  /* ---- Pitfall ---- */
+  .pitfall-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .pitfall {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 3px solid var(--yellow);
+  }
+  .pitfall .title { font-size: 14px; font-weight: 700; color: var(--yellow); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .pitfall .title::before { content: '⚠️'; }
+  .pitfall .desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .pitfall .fix { font-size: 12px; color: var(--green); margin-top: 8px; }
+  .pitfall .fix::before { content: '✅ '; }
+
+  /* ---- Stats ---- */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 36px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+  }
+  .stat .label { font-size: 13px; color: var(--muted); }
+
+  /* ---- CTA ---- */
+  .cta {
+    background: linear-gradient(135deg, #16213e 0%, #1a1037 100%);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 16px;
+    padding: 48px;
+    text-align: center;
+    margin: 40px 0;
+  }
+  .cta h2 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+  .cta p { color: var(--muted); margin-bottom: 28px; font-size: 15px; }
+  .cta-steps {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .cta-step {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+  .cta-step .n { color: var(--accent); font-weight: 700; margin-right: 6px; }
+
+  /* ---- Footer ---- */
+  .footer {
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <div class="hero-badge">Multi-Agent · 飞书群聊 · Hermes Agent</div>
+  <h1>飞书 Multi-Agent 协作系统</h1>
+  <p>PM → Plan → Dev → Test 四角色自动协作，一条需求进来，自动跑完设计、开发、Review、测试全流程</p>
+</div>
+
+<!-- ==================== STATS ==================== -->
+<div class="container">
+  <div class="stat-row" style="margin-top: -32px; position: relative; z-index: 1;">
+    <div class="stat">
+      <div class="num">4</div>
+      <div class="label">角色各司其职</div>
+    </div>
+    <div class="stat">
+      <div class="num">1</div>
+      <div class="label">条命令完成部署</div>
+    </div>
+    <div class="stat">
+      <div class="num">0</div>
+      <div class="label">手动配置项</div>
+    </div>
+    <div class="stat">
+      <div class="num">2~5</div>
+      <div class="label">角色灵活扩展</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1: 角色体系 ==================== -->
+<div class="section">
+<div class="container">
+
+  <h2 class="section-title">角色体系</h2>
+  <p class="section-subtitle">每个角色是独立 AI Agent，有明确职责边界，像真实团队一样协作</p>
+
+  <div class="role-grid">
+    <div class="role-card pm">
+      <div class="icon">🎯</div>
+      <div class="name">PM</div>
+      <div class="en">项目总监</div>
+      <div class="desc">接收需求、拆解任务<br>派发链路、汇总报告</div>
+      <div class="duty">不写代码、不做测试</div>
+    </div>
+    <div class="role-card plan">
+      <div class="icon">🏗️</div>
+      <div class="name">Plan</div>
+      <div class="en">技术规划</div>
+      <div class="desc">架构设计、技术方案<br>任务拆解、Code Review</div>
+      <div class="duty">不做功能测试、不开发</div>
+    </div>
+    <div class="role-card dev">
+      <div class="icon">⚡</div>
+      <div class="name">Dev</div>
+      <div class="en">开发工程师</div>
+      <div class="desc">接收方案、开发实现<br>修复 bug、主动通知测试</div>
+      <div class="duty">不设计架构、不做测试</div>
+    </div>
+    <div class="role-card test">
+      <div class="icon">🔍</div>
+      <div class="name">Test</div>
+      <div class="en">测试验证</div>
+      <div class="desc">功能测试、边界测试<br>问题反馈、验证汇报</div>
+      <div class="duty">不做 Code Review、不开发</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== SECTION 2: 工作流程 ==================== -->
+<div class="section">
+<div class="container">
+
+  <h2 class="section-title">完整工作流程</h2>
+  <p class="section-subtitle">一条需求进来，四角色自动接力，全程无需人工干预</p>
+
+  <div class="flow-container">
+    <div class="flow-row">
+      <div class="flow-node user">用户<span class="sub">发需求</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node pm">PM<span class="sub">接收派发</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node plan">Plan<span class="sub">出方案</span></div>
+    </div>
+    <div style="text-align:center;margin:6px 0"><span class="flow-arrow-down">↓</span></div>
+    <div class="flow-row">
+      <div class="flow-node dev">Dev<span class="sub">开发实现</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node plan">Plan<span class="sub">Code Review</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node pm">PM<span class="sub">同步结果</span></div>
+    </div>
+    <div style="text-align:center;margin:6px 0"><span class="flow-arrow-down">↓</span></div>
+    <div class="flow-row">
+      <div class="flow-node test">Test<span class="sub">功能测试</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node dev">Dev<span class="sub">修复问题</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node test">Test<span class="sub">再验</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node pm">PM<span class="sub">汇总报告</span></div>
+    </div>
+    <div class="flow-desc">循环直到测试通过，PM 出任务完结报告</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== SECTION 3: 能做什么 ==================== -->
+<div class="section">
+<div class="container">
+
+  <h2 class="section-title">能做什么</h2>
+  <p class="section-subtitle">覆盖软件开发全生命周期，从需求到交付不需要人工转交</p>
+
+  <div class="usecase-grid">
+    <div class="usecase">
+      <div class="icon">📐</div>
+      <div class="title">架构设计</div>
+      <div class="desc">Plan 自动分析需求，设计系统架构，输出详细技术方案和任务拆解</div>
+    </div>
+    <div class="usecase">
+      <div class="icon">💻</div>
+      <div class="title">代码开发</div>
+      <div class="desc">Dev 接收方案，自动完成代码编写、自测、并主动发起 Code Review</div>
+    </div>
+    <div class="usecase">
+      <div class="icon">🔍</div>
+      <div class="title">代码审查</div>
+      <div class="desc">Plan 对照方案逐项审查，发现问题直接 @Dev 反馈，Dev 修复后继续验证</div>
+    </div>
+    <div class="usecase">
+      <div class="icon">🧪</div>
+      <div class="title">功能测试</div>
+      <div class="desc">Test 对照原始需求逐条验证，发现 bug 直接 @Dev，Dev 修复后主动通知 Test 再验</div>
+    </div>
+    <div class="usecase">
+      <div class="icon">📊</div>
+      <div class="title">进度管理</div>
+      <div class="desc">PM 实时监控链路进展，某个环节卡住自动推进，任务完成后自动汇总</div>
+    </div>
+    <div class="usecase">
+      <div class="icon">🔗</div>
+      <div class="title">多场景扩展</div>
+      <div class="desc">2~5 个角色任意组合：PM+Dev、PM+Dev+Test、PM+Plan+Dev+Test，链路自动适配</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== SECTION 4: 协作优势 ==================== -->
+<div class="section">
+<div class="container">
+
+  <h2 class="section-title">协作优势</h2>
+  <p class="section-subtitle">相比单 Agent 或人工团队，Multi-Agent 协作模式在多个维度有显著优势</p>
+
+  <div class="adv-grid">
+    <div class="adv">
+      <div class="num">1</div>
+      <div class="content">
+        <div class="title">职责清晰，永不越界</div>
+        <div class="desc">每个 Agent 有固定职责范围，PM 不写代码、Dev 不做测试、Test 不做架构设计。通过链路规则强制约束，角色之间不会混乱。</div>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">2</div>
+      <div class="content">
+        <div class="title">全自动交接，无需人工转交</div>
+        <div class="desc">每个 Agent 完成后，第一条消息自动 @ 下游角色继续处理。Dev 修完 bug 主动 @Test 继续测试，不依赖人工发现。</div>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">3</div>
+      <div class="content">
+        <div class="title">上下文不丢失</div>
+        <div class="desc">通过共享 AGENT_CONTEXT.md 文件，每个 Agent 都能读到项目当前状态。任何人中途加入都能立即恢复完整链路。</div>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">4</div>
+      <div class="content">
+        <div class="title">自然扩展，无需重新设计</div>
+        <div class="desc">加角色只需提供 SOUL 模板文件，setup.sh 自动识别并渲染。2~5 个角色任意组合，链路自动适配。</div>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">5</div>
+      <div class="content">
+        <div class="title">一键部署，零手动配置</div>
+        <div class="desc">用户只需提供飞书 App ID 和 App Secret，其余 profiles、SOUL.md、源码修复、进程启动全部自动化。</div>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">6</div>
+      <div class="content">
+        <div class="title">Dev↔Test 闭环，修复不过夜</div>
+        <div class="desc">Test 发现问题 → @Dev → Dev 修复 → @Test 继续验证 → 循环直到通过。所有问题在链路内闭环，不漏走到外部。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== SECTION 5: 核心机制 ==================== -->
+<div class="section">
+<div class="container">
+
+  <h2 class="section-title">核心机制</h2>
+  <p class="section-subtitle">关键技术设计，决定了 Multi-Agent 协作的可靠性</p>
+
+  <div class="mech-grid">
+    <div class="mech">
+      <div class="mech-icon">🧠</div>
+      <div class="mech-content">
+        <div class="mech-title">记忆持久化：AGENT_CONTEXT.md</div>
+        <div class="mech-desc">
+          每个 Agent 对话独立，无法共享上下文。我们设计了项目级共享文件机制：<br><br>
+          <code>【项目目录】/AGENT_CONTEXT.md</code><br><br>
+          包含：原始任务 → 当前状态 → 链路记录 → 各环节输出 → 最终报告。<br><br>
+          规则：每个 Agent 收到消息后立即读取文件了解全局状态，完成环节后更新文件并推进链路。任何人中途加入，从文件恢复。
+        </div>
+      </div>
+    </div>
+    <div class="mech">
+      <div class="mech-icon">🏷️</div>
+      <div class="mech-content">
+        <div class="mech-title">身份隔离：profile + SOUL.md 优先级</div>
+        <div class="mech-desc">
+          4 个 bot 连同一个飞书应用会共享全局 SOUL.md，身份必然混乱。<br><br>
+          修复：修改 prompt_builder.py，profile SOUL.md 优先于全局 SOUL.md。每个 profile 有独立目录、配置、SOUL.md，各自加载专属身份，互不干扰。
+        </div>
+      </div>
+    </div>
+    <div class="mech">
+      <div class="mech-icon">🔗</div>
+      <div class="mech-content">
+        <div class="mech-title">链路接力：强制 @mention 第一条消息</div>
+        <div class="mech-desc">
+          协作最大风险：Agent 修复后不通知下游，链路断掉。<br><br>
+          强制规则：Dev 修复完成后，第一条消息必须 @Test 通知继续验证，不允许先说"好的收到"。同样规则适用于 PM→Plan、Plan→Dev 的所有链路交接点。
+        </div>
+      </div>
+    </div>
+    <div class="mech">
+      <div class="mech-icon">🎯</div>
+      <div class="mech-content">
+        <div class="mech-title">意图识别：at_patterns 意图短语</div>
+        <div class="mech-desc">
+          LLM 经常生成"通知 PM"而不发真正 @mention，导致下游收不到。<br><br>
+          解决方案：在 feishu.py 注册意图短语模式（"通知XX"、"汇报XX"、"艾特XX"），自动识别并插入 &lt;at&gt; XML 标签，确保每条意图都能触达。
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== SECTION 6: 问题规避 ==================== -->
+<div class="section">
+<div class="container">
+
+  <h2 class="section-title">问题规避</h2>
+  <p class="section-subtitle">我们在真实场景中踩过的坑，已固化成自动化规避机制</p>
+
+  <div class="pitfall-grid">
+    <div class="pitfall">
+      <div class="title">Agent 身份丢失</div>
+      <div class="desc">4 个 bot 连到同一个飞书应用时，都会加载全局 SOUL.md，导致角色混乱。</div>
+      <div class="fix">修复 prompt_builder.py，profile SOUL.md 优先于全局 SOUL.md，每个 Agent 加载自己专属身份</div>
+    </div>
+    <div class="pitfall">
+      <div class="title">@mention 中文名不触发</div>
+      <div class="desc">飞书默认只识别英文 @mention，LLM 生成的中文名字不会触发 bot。</div>
+      <div class="fix">在 feishu.py at_patterns 加入所有角色中文名，匹配 "通知XX"、"汇报XX" 等意图短语</div>
+    </div>
+    <div class="pitfall">
+      <div class="title">Dev 修复后不通知 Test</div>
+      <div class="desc">Test 发现问题发给 Dev，Dev 修复后直接回复群里，Test 没收到通知，链路断在最后一公里。</div>
+      <div class="fix">Dev SOUL.md 强制规则：修复完成后必须第一条消息 @Test，不允许先说确认语</div>
+    </div>
+    <div class="pitfall">
+      <div class="title">幽灵进程占用 app_id</div>
+      <div class="desc">启动时没有 --profile 参数，gateway 注册到所有飞书应用，导致后续启动全部冲突。</div>
+      <div class="fix">setup.sh 强制 pkill 旧进程 + 清理 lock 文件，每个 profile 独立进程 + --profile 参数</div>
+    </div>
+    <div class="pitfall">
+      <div class="title">Session 缓存导致配置不生效</div>
+      <div class="desc">修改 SOUL.md 后测试，发现还是旧身份。Session 缓存了旧的系统提示。</div>
+      <div class="fix">修改 SOUL.md 后清 sessions 目录 + 重启 bot，或开新 DM 测试</div>
+    </div>
+    <div class="pitfall">
+      <div class="title">应用未发布 WS 连上但无响应</div>
+      <div class="desc">飞书应用没有发布版本，WebSocket 连接成功，但 @消息完全无响应，排查困难。</div>
+      <div class="fix">在部署指南中明确强调必须发布版本，作为前置要求</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== SECTION 7: 如何使用 ==================== -->
+<div class="container">
+  <div class="cta">
+    <h2>立即开始使用</h2>
+    <p>把飞书凭证发给我，我全自动配置好整套系统</p>
+    <div class="cta-steps">
+      <div class="cta-step"><span class="n">1</span>创建飞书应用</div>
+      <div class="cta-step"><span class="n">2</span>开启机器人 + 发布</div>
+      <div class="cta-step"><span class="n">3</span>拉群聊、收集凭证</div>
+      <div class="cta-step"><span class="n">4</span>发给我</div>
+    </div>
+    <p style="color:var(--muted);font-size:13px">其余全部自动化：profiles 创建、配置文件生成、SOUL.md 渲染、进程启动、链路验证</p>
+  </div>
+</div>
+
+<div class="footer">
+  飞书 Multi-Agent 协作系统 · Hermes Agent · PM → Plan → Dev → Test · 谭军@2026
+</div>
+
+</body>
+</html>
